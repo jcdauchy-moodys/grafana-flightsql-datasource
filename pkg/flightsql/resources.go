@@ -72,9 +72,9 @@ func (d *FlightSQLDatasource) getTables(w http.ResponseWriter, r *http.Request) 
 	defer cancel()
 	ctx = metadata.NewOutgoingContext(ctx, d.md)
 
-	info, err := d.client.GetTables(ctx, &flightsql.GetTablesOpts{
-		TableTypes: []string{"BASE TABLE", "table"},
-	})
+	// Don't filter by table types - get all tables
+	// Different databases use different table type names (Oracle uses "TABLE", "VIEW", etc.)
+	info, err := d.client.GetTables(ctx, &flightsql.GetTablesOpts{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
