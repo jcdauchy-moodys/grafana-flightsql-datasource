@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 # Installing mage
 go install github.com/magefile/mage
 # Load project version
