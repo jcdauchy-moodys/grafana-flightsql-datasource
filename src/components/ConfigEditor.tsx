@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react'
-import {InlineSwitch, FieldSet, InlineField, SecretInput, Input, Select, InlineFieldRow, InlineLabel} from '@grafana/ui'
+import {InlineSwitch, FieldSet, InlineField, SecretInput, Input, Select, InlineFieldRow, InlineLabel, TextArea} from '@grafana/ui'
 import {DataSourcePluginOptionsEditorProps, SelectableValue} from '@grafana/data'
-import {FlightSQLDataSourceOptions, authTypeOptions, SecureJsonData} from '../types'
+import {FlightSQLDataSourceOptions, authTypeOptions, databaseTypeOptions, defaultHealthCheckQueries, SecureJsonData} from '../types'
 import {
   onHostChange,
   onTokenChange,
@@ -15,6 +15,8 @@ import {
   removeMetaData,
   onResetToken,
   onResetPassword,
+  onDatabaseTypeChange,
+  onHealthCheckQueryChange,
 } from './utils'
 
 export function ConfigEditor(props: DataSourcePluginOptionsEditorProps<FlightSQLDataSourceOptions, SecureJsonData>) {
@@ -26,12 +28,22 @@ export function ConfigEditor(props: DataSourcePluginOptionsEditorProps<FlightSQL
     value: jsonData?.selectedAuthType,
     label: jsonData?.selectedAuthType,
   })
+  const [selectedDatabaseType, setDatabaseType] = useState<SelectableValue<string>>({
+    value: jsonData?.databaseType || 'generic',
+    label: databaseTypeOptions.find(opt => opt.value === (jsonData?.databaseType || 'generic'))?.label || 'Generic',
+  })
   const existingMetastate = jsonData?.metadata?.length && jsonData?.metadata?.map((m: any) => ({key: Object.keys(m)[0], value: Object.values(m)[0]}))
   const [metaDataArr, setMetaData] = useState(existingMetastate || [{key: '', value: ''}])
+  
   useEffect(() => {
     onAuthTypeChange(selectedAuthType, options, onOptionsChange)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAuthType])
+
+  useEffect(() => {
+    onDatabaseTypeChange(selectedDatabaseType, options, onOptionsChange)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDatabaseType])
 
   useEffect(() => {
     const {onOptionsChange, options} = props  
@@ -115,6 +127,31 @@ export function ConfigEditor(props: DataSourcePluginOptionsEditorProps<FlightSQL
             onChange={() => onSecureChange(options, onOptionsChange)}
             showLabel={false}
             disabled={false}
+          />
+        </InlineField>
+      </FieldSet>
+      <FieldSet label="Database Configuration" width={400}>
+        <InlineField labelWidth={20} label="Database Type" tooltip="Select the database type to use the appropriate default health check query">
+          <Select
+            options={databaseTypeOptions}
+            onChange={setDatabaseType}
+            value={selectedDatabaseType}
+            width={40}
+            placeholder="Generic"
+          />
+        </InlineField>
+        <InlineField 
+          labelWidth={20} 
+          label="Health Check Query" 
+          tooltip="Custom query used to test the connection. Leave empty to use the default for the selected database type"
+        >
+          <Input
+            width={40}
+            name="healthCheckQuery"
+            type="text"
+            value={jsonData.healthCheckQuery || ''}
+            placeholder={defaultHealthCheckQueries[selectedDatabaseType?.value || 'generic'] || 'SELECT 1'}
+            onChange={(e) => onHealthCheckQueryChange(e, options, onOptionsChange)}
           />
         </InlineField>
       </FieldSet>

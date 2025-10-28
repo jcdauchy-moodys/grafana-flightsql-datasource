@@ -5,20 +5,20 @@ import {FlightSQLDataSourceOptions, SQLQuery} from './types'
 
 export const mockDatasource = new FlightSQLDataSource({
   id: 1,
-  uid: 'influxdata-flightsql-id',
-  type: 'influxdata-flightsql-datasource',
+  uid: 'flightsql-id',
+  type: 'flightsql-datasource',
   name: 'FlightSQL Data Source',
   readOnly: false,
   jsonData: {},
   access: 'proxy',
   meta: {
-    id: 'influxdata-flightsql-datasource',
+    id: 'flightsql-datasource',
     module: '',
     name: 'FlightSQL Data Source',
     type: PluginType.datasource,
     alerting: true,
     backend: true,
-    baseUrl: 'public/plugins/influxdata-flightsql-datasource',
+    baseUrl: 'public/plugins/flightsql-datasource',
     info: {
       description: '',
       screenshots: [],

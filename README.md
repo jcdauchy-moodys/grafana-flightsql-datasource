@@ -12,7 +12,7 @@ The plugin requires the user to run Grafana >=9.2.5.
 Because Grafana Flight SQL Plugin is a community published plugin, you can install it to your existing Grafana Cloud instance.
 
 - In your cloud instance navigate to connections and search for FlightSQL, follow the link to install.
-- Or directly go to this [link](https://grafana.com/grafana/plugins/influxdata-flightsql-datasource/?tab=installation) to install the plugin into your cloud instance.
+- Or directly go to this [link](https://grafana.com/grafana/plugins/flightsql-datasource/?tab=installation) to install the plugin into your cloud instance.
 - Now in your instance you can navigate back to connections and search for FlightSQL which will be installed and allow you to create a FlightSQL datasource.
 
 ## Local installation 
@@ -49,7 +49,7 @@ The following shell script downloads and extracts the latest Flight SQL plugin s
 
 ```
 docker run \
-  --volume $PWD/influxdata-flightsql-datasource:/custom/plugins/directory/influxdata-flightsql-datasource \
+  --volume $PWD/flightsql-datasource:/custom/plugins/directory/flightsql-datasource \
   --publish 3000:3000 \
   --name grafana \
   grafana/grafana:latest
@@ -64,7 +64,7 @@ services:
     ports:
       - 3000:3000
     volumes: 
-      - ./influxdata-flightsql-datasource:/custom/plugins/directory/influxdata-flightsql-datasource
+      - ./flightsql-datasource:/custom/plugins/directory/flightsql-datasource
     restart: always
 ```
 
@@ -76,12 +76,12 @@ services:
 
      ```ini
      [plugins]
-     allow_loading_unsigned_plugins = influxdata-flightsql-datasource
+     allow_loading_unsigned_plugins = flightsql-datasource
      ```
 
    - **OR** set the relevant environment variable where Grafana is started:
      ```shell
-     GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=influxdata-flightsql-datasource
+     GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=flightsql-datasource
      ```
 
 ## Usage

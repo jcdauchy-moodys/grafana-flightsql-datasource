@@ -26,6 +26,8 @@ export interface FlightSQLDataSourceOptions extends DataSourceJsonData {
   password?: string
   selectedAuthType?: string
   metadata?: any
+  databaseType?: string
+  healthCheckQuery?: string
 }
 
 export interface SecureJsonData {
@@ -46,6 +48,26 @@ export const authTypeOptions = [
   {key: 1, label: 'username/password', value: 'username/password'},
   {key: 2, label: 'token', value: 'token'},
 ]
+
+export const databaseTypeOptions = [
+  {key: 0, label: 'Generic', value: 'generic'},
+  {key: 1, label: 'Oracle', value: 'oracle'},
+  {key: 2, label: 'PostgreSQL', value: 'postgresql'},
+  {key: 3, label: 'MySQL', value: 'mysql'},
+  {key: 4, label: 'SQLite', value: 'sqlite'},
+  {key: 5, label: 'DuckDB', value: 'duckdb'},
+  {key: 6, label: 'ClickHouse', value: 'clickhouse'},
+]
+
+export const defaultHealthCheckQueries: Record<string, string> = {
+  generic: 'SELECT 1',
+  oracle: 'SELECT 1 FROM DUAL',
+  postgresql: 'SELECT 1',
+  mysql: 'SELECT 1',
+  sqlite: 'SELECT 1',
+  duckdb: 'SELECT 1',
+  clickhouse: 'SELECT 1',
+}
 
 export const sqlLanguageDefinition = {
   id: 'sql',

@@ -25,12 +25,14 @@ var (
 )
 
 type config struct {
-	Addr     string              `json:"host"`
-	Metadata []map[string]string `json:"metadata"`
-	Secure   bool                `json:"secure"`
-	Username string              `json:"username"`
-	Password string              `json:"password"`
-	Token    string              `json:"token"`
+	Addr             string              `json:"host"`
+	Metadata         []map[string]string `json:"metadata"`
+	Secure           bool                `json:"secure"`
+	Username         string              `json:"username"`
+	Password         string              `json:"password"`
+	Token            string              `json:"token"`
+	DatabaseType     string              `json:"databaseType"`
+	HealthCheckQuery string              `json:"healthCheckQuery"`
 }
 
 func (cfg config) validate() error {
@@ -49,11 +51,30 @@ func (cfg config) validate() error {
 	return nil
 }
 
+// getDefaultHealthCheckQuery returns the default health check query for a given database type
+func getDefaultHealthCheckQuery(databaseType string) string {
+	defaultQueries := map[string]string{
+		"oracle":     "SELECT 1 FROM DUAL",
+		"postgresql": "SELECT 1",
+		"mysql":      "SELECT 1",
+		"sqlite":     "SELECT 1",
+		"duckdb":     "SELECT 1",
+		"clickhouse": "SELECT 1",
+		"generic":    "SELECT 1",
+	}
+
+	if query, ok := defaultQueries[databaseType]; ok {
+		return query
+	}
+	return "SELECT 1"
+}
+
 // FlightSQLDatasource is a Grafana datasource plugin for Flight SQL.
 type FlightSQLDatasource struct {
-	client          *client
-	resourceHandler backend.CallResourceHandler
-	md              metadata.MD
+	client           *client
+	resourceHandler  backend.CallResourceHandler
+	md               metadata.MD
+	healthCheckQuery string
 }
 
 // NewDatasource creates a new datasource instance.
@@ -107,9 +128,21 @@ func NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSetti
 		md.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.Token))
 	}
 
+	// Determine the health check query to use
+	healthCheckQuery := cfg.HealthCheckQuery
+	if healthCheckQuery == "" {
+		// Use default based on database type
+		databaseType := cfg.DatabaseType
+		if databaseType == "" {
+			databaseType = "generic"
+		}
+		healthCheckQuery = getDefaultHealthCheckQuery(databaseType)
+	}
+
 	ds := &FlightSQLDatasource{
-		client: client,
-		md:     md,
+		client:           client,
+		md:               md,
+		healthCheckQuery: healthCheckQuery,
 	}
 	r := chi.NewRouter()
 	r.Use(recoverer)
@@ -145,7 +178,7 @@ func (d *FlightSQLDatasource) CallResource(ctx context.Context, req *backend.Cal
 // a datasource is working as expected.
 func (d *FlightSQLDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	query := sqlutil.Query{
-		RawSQL: "select 1",
+		RawSQL: d.healthCheckQuery,
 		Format: sqlutil.FormatOptionTable,
 	}
 	if resp := d.query(ctx, query); resp.Error != nil {
