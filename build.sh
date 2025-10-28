@@ -5,4 +5,4 @@ go install github.com/magefile/mage
 PKG_VERSION=$(cat ./package.json | jq -r ".version")
 # Compile it again
 echo "Compiling code..."
-yarn install --frozen-lockfile && yarn build && mage -v
+yarn install --ignore-engines && yarn build && mage -v
