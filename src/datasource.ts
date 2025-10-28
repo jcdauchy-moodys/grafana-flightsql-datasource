@@ -65,6 +65,7 @@ async metricFindQuery(queryText: string, options?: any): Promise<MetricFindValue
     const interpolatedQuery: SQLQuery = {
       ...query,
       queryText: getTemplateSrv().replace(query.queryText, scopedVars, this.interpolateVariable),
+      hostOverride: query.hostOverride ? getTemplateSrv().replace(query.hostOverride, scopedVars) : undefined,
     }
     return interpolatedQuery
   }
