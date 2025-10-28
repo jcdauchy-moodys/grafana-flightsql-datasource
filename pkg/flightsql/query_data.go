@@ -22,7 +22,7 @@ func (d *FlightSQLDatasource) QueryData(ctx context.Context, req *backend.QueryD
 	)
 
 	for _, dataQuery := range req.Queries {
-		query, err := decodeQueryRequest(dataQuery)
+		query, hostOverride, err := decodeQueryRequest(dataQuery)
 		if err != nil {
 			response.Responses[dataQuery.RefID] = backend.ErrDataResponse(backend.StatusBadRequest, err.Error())
 			continue
@@ -33,7 +33,7 @@ func (d *FlightSQLDatasource) QueryData(ctx context.Context, req *backend.QueryD
 			defer wg.Done()
 			executeResults <- executeResult{
 				refID:        query.RefID,
-				dataResponse: d.query(ctx, *query),
+				dataResponse: d.query(ctx, *query, hostOverride),
 			}
 		}()
 	}
@@ -48,11 +48,11 @@ func (d *FlightSQLDatasource) QueryData(ctx context.Context, req *backend.QueryD
 }
 
 // decodeQueryRequest decodes a [backend.DataQuery] and returns a
-// [*sqlutil.Query] where all macros are expanded.
-func decodeQueryRequest(dataQuery backend.DataQuery) (*sqlutil.Query, error) {
+// [*sqlutil.Query] where all macros are expanded, along with the hostOverride if present.
+func decodeQueryRequest(dataQuery backend.DataQuery) (*sqlutil.Query, string, error) {
 	var q queryRequest
 	if err := json.Unmarshal(dataQuery.JSON, &q); err != nil {
-		return nil, fmt.Errorf("unmarshal json: %w", err)
+		return nil, "", fmt.Errorf("unmarshal json: %w", err)
 	}
 
 	var format sqlutil.FormatQueryOption
@@ -77,11 +77,11 @@ func decodeQueryRequest(dataQuery backend.DataQuery) (*sqlutil.Query, error) {
 	// Process macros and execute the query.
 	sql, err := sqlutil.Interpolate(query, macros)
 	if err != nil {
-		return nil, fmt.Errorf("macro interpolation: %w", err)
+		return nil, "", fmt.Errorf("macro interpolation: %w", err)
 	}
 	query.RawSQL = sql
 
-	return query, nil
+	return query, q.HostOverride, nil
 }
 
 // executeResult is an envelope for concurrent query responses.
@@ -98,10 +98,12 @@ type queryRequest struct {
 	IntervalMilliseconds int    `json:"intervalMs"`
 	MaxDataPoints        int64  `json:"maxDataPoints"`
 	Format               string `json:"format"`
+	HostOverride         string `json:"hostOverride"`
 }
 
 // query executes a SQL statement by issuing a `CommandStatementQuery` command to Flight SQL.
-func (d *FlightSQLDatasource) query(ctx context.Context, query sqlutil.Query) (resp backend.DataResponse) {
+// If hostOverride is provided, it will create a temporary client for that host instead of using the datasource's default client.
+func (d *FlightSQLDatasource) query(ctx context.Context, query sqlutil.Query, hostOverride string) (resp backend.DataResponse) {
 	defer func() {
 		if r := recover(); r != nil {
 			logErrorf("Panic: %s %s", r, string(debug.Stack()))
@@ -114,18 +116,38 @@ func (d *FlightSQLDatasource) query(ctx context.Context, query sqlutil.Query) (r
 		return backend.DataResponse{}
 	}
 
+	// Determine which client to use
+	clientToUse := d.client
+	var tempClient *client
+
+	if hostOverride != "" && hostOverride != d.getConfigAddr() {
+		// Create a temporary client with the overridden host
+		overrideCfg, err := d.createOverrideConfig(hostOverride)
+		if err != nil {
+			return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("invalid host override: %s", err))
+		}
+
+		tempClient, err = newFlightSQLClient(overrideCfg)
+		if err != nil {
+			return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("failed to create client for host override: %s", err))
+		}
+		defer tempClient.Close()
+
+		clientToUse = tempClient
+	}
+
 	if d.md.Len() != 0 {
 		ctx = metadata.NewOutgoingContext(ctx, d.md)
 	}
 
-	info, err := d.client.Execute(ctx, query.RawSQL)
+	info, err := clientToUse.Execute(ctx, query.RawSQL)
 	if err != nil {
 		return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("flightsql: %s", err))
 	}
 	if len(info.Endpoint) != 1 {
 		return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("unsupported endpoint count in response: %d", len(info.Endpoint)))
 	}
-	reader, err := d.client.DoGetWithHeaderExtraction(ctx, info.Endpoint[0].Ticket)
+	reader, err := clientToUse.DoGetWithHeaderExtraction(ctx, info.Endpoint[0].Ticket)
 	if err != nil {
 		return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("flightsql: %s", err))
 	}

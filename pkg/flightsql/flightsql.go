@@ -74,6 +74,7 @@ type FlightSQLDatasource struct {
 	client           *client
 	resourceHandler  backend.CallResourceHandler
 	md               metadata.MD
+	cfg              config // Store the original config for creating override clients
 	healthCheckQuery string
 }
 
@@ -142,6 +143,7 @@ func NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSetti
 	ds := &FlightSQLDatasource{
 		client:           client,
 		md:               md,
+		cfg:              cfg,
 		healthCheckQuery: healthCheckQuery,
 	}
 	r := chi.NewRouter()
@@ -181,7 +183,7 @@ func (d *FlightSQLDatasource) CheckHealth(ctx context.Context, req *backend.Chec
 		RawSQL: d.healthCheckQuery,
 		Format: sqlutil.FormatOptionTable,
 	}
-	if resp := d.query(ctx, query); resp.Error != nil {
+	if resp := d.query(ctx, query, ""); resp.Error != nil {
 		return &backend.CheckHealthResult{
 			Status:  backend.HealthStatusError,
 			Message: fmt.Sprintf("ERROR: %s", resp.Error),
@@ -207,6 +209,28 @@ func recoverer(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(fn)
+}
+
+// getConfigAddr returns the configured host address
+func (d *FlightSQLDatasource) getConfigAddr() string {
+	return d.cfg.Addr
+}
+
+// createOverrideConfig creates a new config with the overridden host
+// while preserving all other settings from the datasource config
+func (d *FlightSQLDatasource) createOverrideConfig(hostOverride string) (config, error) {
+	if strings.Count(hostOverride, ":") == 0 {
+		return config{}, fmt.Errorf(`host override must be in the form "host:port"`)
+	}
+
+	overrideCfg := d.cfg
+	overrideCfg.Addr = hostOverride
+
+	if err := overrideCfg.validate(); err != nil {
+		return config{}, fmt.Errorf("config validation: %v", err)
+	}
+
+	return overrideCfg, nil
 }
 
 func logInfof(format string, v ...any) {

@@ -11,6 +11,7 @@ export interface SQLQuery extends DataQuery {
   orderBy?: string
   groupBy?: string
   limit?: string
+  hostOverride?: string
 }
 
 export const DEFAULT_QUERY: Partial<SQLQuery> = {}

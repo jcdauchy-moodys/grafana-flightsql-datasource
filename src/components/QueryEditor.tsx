@@ -1,5 +1,5 @@
 import React, {useState, useMemo, useCallback, useEffect} from 'react'
-import {Button, Modal, SegmentSection, Select, InlineFieldRow, SegmentInput} from '@grafana/ui'
+import {Button, Modal, SegmentSection, Select, InlineFieldRow, SegmentInput, InlineField, Input} from '@grafana/ui'
 import {QueryEditorProps, SelectableValue} from '@grafana/data'
 import {MacroType} from '@grafana/experimental'
 import {FlightSQLDataSource} from '../datasource'
@@ -175,6 +175,22 @@ export function QueryEditor(props: QueryEditorProps<FlightSQLDataSource, SQLQuer
           <Button style={{marginLeft: '5px'}} fill="outline" size="md" onClick={() => showHelpModal(!helpModal)}>
             Show Query Help
           </Button>
+        </InlineFieldRow>
+        <InlineFieldRow style={{flexFlow: 'row', alignItems: 'center', marginTop: '10px'}}>
+          <InlineField 
+            label="Host Override" 
+            labelWidth={20}
+            tooltip="Override the datasource host:port for this query. Leave empty to use the datasource configuration. Supports template variables."
+          >
+            <Input
+              width={40}
+              name="hostOverride"
+              type="text"
+              value={query.hostOverride || ''}
+              placeholder="localhost:1234 (optional)"
+              onChange={(e) => onChange({...query, hostOverride: e.currentTarget.value})}
+            />
+          </InlineField>
         </InlineFieldRow>
       </div>
       {!rawEditor && (
