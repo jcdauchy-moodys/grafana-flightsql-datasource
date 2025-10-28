@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react'
-import {InlineSwitch, FieldSet, InlineField, SecretInput, Input, Select, InlineFieldRow, InlineLabel, TextArea} from '@grafana/ui'
+import {InlineSwitch, FieldSet, InlineField, SecretInput, Input, Select, InlineFieldRow, InlineLabel} from '@grafana/ui'
 import {DataSourcePluginOptionsEditorProps, SelectableValue} from '@grafana/data'
 import {FlightSQLDataSourceOptions, authTypeOptions, databaseTypeOptions, defaultHealthCheckQueries, SecureJsonData} from '../types'
 import {
