@@ -109,6 +109,11 @@ func (d *FlightSQLDatasource) query(ctx context.Context, query sqlutil.Query) (r
 		}
 	}()
 
+	// Skip execution if query is empty
+	if query.RawSQL == "" {
+		return backend.DataResponse{}
+	}
+
 	if d.md.Len() != 0 {
 		ctx = metadata.NewOutgoingContext(ctx, d.md)
 	}

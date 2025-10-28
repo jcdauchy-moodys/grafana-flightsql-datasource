@@ -191,6 +191,7 @@ func copyData(field *data.Field, col arrow.Array) error {
 			}
 			field.Append(v.Value(i).ToTime(arrow.Nanosecond))
 		}
+		return nil
 	case arrow.DENSE_UNION:
 		v := array.NewDenseUnionData(data)
 		for i := 0; i < v.Len(); i++ {
@@ -219,32 +220,46 @@ func copyData(field *data.Field, col arrow.Array) error {
 			}
 			field.Append(json.RawMessage(b))
 		}
+		return nil
 	case arrow.STRING:
 		copyBasic[string](field, array.NewStringData(data))
+		return nil
 	case arrow.UINT8:
 		copyBasic[uint8](field, array.NewUint8Data(data))
+		return nil
 	case arrow.UINT16:
 		copyBasic[uint16](field, array.NewUint16Data(data))
+		return nil
 	case arrow.UINT32:
 		copyBasic[uint32](field, array.NewUint32Data(data))
+		return nil
 	case arrow.UINT64:
 		copyBasic[uint64](field, array.NewUint64Data(data))
+		return nil
 	case arrow.INT8:
 		copyBasic[int8](field, array.NewInt8Data(data))
+		return nil
 	case arrow.INT16:
 		copyBasic[int16](field, array.NewInt16Data(data))
+		return nil
 	case arrow.INT32:
 		copyBasic[int32](field, array.NewInt32Data(data))
+		return nil
 	case arrow.INT64:
 		copyBasic[int64](field, array.NewInt64Data(data))
+		return nil
 	case arrow.FLOAT32:
 		copyBasic[float32](field, array.NewFloat32Data(data))
+		return nil
 	case arrow.FLOAT64:
 		copyBasic[float64](field, array.NewFloat64Data(data))
+		return nil
 	case arrow.BOOL:
 		copyBasic[bool](field, array.NewBooleanData(data))
+		return nil
 	case arrow.DURATION:
 		copyBasic[int64](field, array.NewInt64Data(data))
+		return nil
 	}
 
 	return nil
