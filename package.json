@@ -35,7 +35,7 @@
     "@types/glob": "^8.0.0",
     "@types/jest": "^29.2.2",
     "@types/lodash": "^4.14.188",
-    "@types/node": "^18.11.9",
+    "@types/node": "^20.0.0",
     "@types/react-dom": "17.0.14",
     "@types/react-test-renderer": "17.0.0",
     "@types/react-virtualized-auto-sizer": "^1.0.1",
@@ -45,7 +45,7 @@
     "css-loader": "^6.7.1",
     "eslint": "8.26.0",
     "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-jsdoc": "^39.6.2",
+    "eslint-plugin-jsdoc": "^50.0.0",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-react": "^7.26.1",
     "eslint-plugin-react-hooks": "^4.2.0",
@@ -70,7 +70,7 @@
     "webpack-livereload-plugin": "^3.0.2"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=16 <=20"
   },
   "dependencies": {
     "@emotion/css": "^11.1.3",
