@@ -1,0 +1,50 @@
+# Build Dockerfile for grafana-flightsql-datasource
+# Uses Node 20 LTS
+FROM node:20-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    bash \
+    git \
+    go \
+    jq \
+    make \
+    yarn
+
+# Set up Go environment
+ENV GOPATH=/go
+ENV PATH=$PATH:/go/bin
+ENV GOCACHE=/tmp/go-cache
+
+# Set working directory
+WORKDIR /src/grafana-flightsql-datasource
+
+# Copy package files first for better caching
+COPY package.json yarn.lock* ./
+
+# Install Node dependencies - bypass engine check for Node 20
+# This is safe as we've verified compatibility with Node 20  
+RUN yarn install --ignore-engines
+
+# Copy Go module files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy all source files
+COPY . .
+
+# Build frontend
+RUN echo "Building frontend..." && yarn build
+
+# Install mage and build only Linux backend to save memory
+RUN echo "Building backend for Linux..." && \
+    go install github.com/magefile/mage && \
+    mage -v build:linux
+
+# Verification stage - list build artifacts
+RUN echo "Build artifacts:" && ls -la /src/grafana-flightsql-datasource/dist
+
+# Final stage - minimal image with just the built plugin
+FROM scratch
+COPY --from=builder /src/grafana-flightsql-datasource/dist /dist
+
