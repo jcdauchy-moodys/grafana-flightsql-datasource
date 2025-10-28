@@ -426,40 +426,15 @@ func copyData(field *data.Field, col arrow.Array) error {
 	default:
 		// For unsupported types, log warning and fill with nulls/empty values
 		logInfof("Unsupported Arrow type %s (ID: %d) for field %s, filling with empty values", col.DataType().Name(), col.DataType().ID(), field.Name)
+		// Fill field with appropriate null/empty values based on whether it's nullable
 		for i := 0; i < col.Len(); i++ {
 			if field.Nullable() {
-				// Append nil pointer for nullable fields
-				switch field.Type().(type) {
-				case *string:
-					var s *string
-					field.Append(s)
-				case *int64:
-					var n *int64
-					field.Append(n)
-				case *float64:
-					var f *float64
-					field.Append(f)
-				case *json.RawMessage:
-					var j *json.RawMessage
-					field.Append(j)
-				default:
-					var j *json.RawMessage
-					field.Append(j)
-				}
+				// For nullable fields, append nil JSON value
+				var j *json.RawMessage
+				field.Append(j)
 			} else {
-				// Append zero value for non-nullable fields
-				switch field.Type().(type) {
-				case string:
-					field.Append("")
-				case int64:
-					field.Append(int64(0))
-				case float64:
-					field.Append(float64(0))
-				case json.RawMessage:
-					field.Append(json.RawMessage(nil))
-				default:
-					field.Append(json.RawMessage(nil))
-				}
+				// For non-nullable fields, append empty JSON
+				field.Append(json.RawMessage(nil))
 			}
 		}
 		return nil
