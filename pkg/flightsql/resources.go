@@ -72,8 +72,25 @@ func (d *FlightSQLDatasource) getTables(w http.ResponseWriter, r *http.Request) 
 	defer cancel()
 	ctx = metadata.NewOutgoingContext(ctx, d.md)
 
+	// Include common table types across different databases
+	// Oracle: "TABLE", "VIEW", "SYSTEM TABLE"
+	// PostgreSQL: "BASE TABLE", "VIEW", "FOREIGN TABLE", "MATERIALIZED VIEW"
+	// MySQL: "BASE TABLE", "VIEW", "SYSTEM VIEW"
+	// Some implementations don't handle empty TableTypes well, so provide comprehensive list
 	info, err := d.client.GetTables(ctx, &flightsql.GetTablesOpts{
-		TableTypes: []string{"BASE TABLE", "table"},
+		TableTypes: []string{
+			"TABLE",             // Standard table (Oracle, MySQL, etc.)
+			"BASE TABLE",        // PostgreSQL, MySQL
+			"VIEW",              // All databases
+			"SYSTEM TABLE",      // System tables (Oracle)
+			"SYSTEM VIEW",       // System views (MySQL)
+			"GLOBAL TEMPORARY",  // Temporary tables
+			"LOCAL TEMPORARY",   // Local temp tables
+			"ALIAS",             // Aliases
+			"SYNONYM",           // Synonyms (Oracle)
+			"MATERIALIZED VIEW", // Materialized views
+			"FOREIGN TABLE",     // Foreign tables (PostgreSQL)
+		},
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -246,3 +246,19 @@ export const onResetPassword = (options: any, onOptionsChange: any) => {
 export const removeQuotes = (str: string) => {
   return str?.replace(/['"]+/g, '')
 }
+
+export const onDatabaseTypeChange = (selectedDatabaseType: any, options: any, onOptionsChange: any) => {
+  const jsonData = {
+    ...options.jsonData,
+    databaseType: selectedDatabaseType?.value,
+  }
+  onOptionsChange({...options, jsonData})
+}
+
+export const onHealthCheckQueryChange = (event: any, options: any, onOptionsChange: any) => {
+  const jsonData = {
+    ...options.jsonData,
+    healthCheckQuery: event.target.value,
+  }
+  onOptionsChange({...options, jsonData})
+}

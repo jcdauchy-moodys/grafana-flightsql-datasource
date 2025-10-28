@@ -24,5 +24,5 @@ fi
 
 echo "The latest release tag of $REPO_NAME is: $LATEST_RELEASE_TAG"
 
-curl -L https://github.com/influxdata/grafana-flightsql-datasource/releases/download/$LATEST_RELEASE_TAG/influxdata-flightsql-datasource-$VERSION.zip --output influxdata-flightsql-datasource.zip
-unzip influxdata-flightsql-datasource.zip -d .
+curl -L https://github.com/influxdata/grafana-flightsql-datasource/releases/download/$LATEST_RELEASE_TAG/flightsql-datasource-$VERSION.zip --output flightsql-datasource.zip
+unzip flightsql-datasource.zip -d .

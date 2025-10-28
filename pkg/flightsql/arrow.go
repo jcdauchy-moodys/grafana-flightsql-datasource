@@ -149,8 +149,18 @@ func newField(f arrow.Field) *data.Field {
 		return newDataField[bool](f)
 	case arrow.TIMESTAMP:
 		return newDataField[time.Time](f)
+	case arrow.DATE32, arrow.DATE64:
+		return newDataField[time.Time](f)
 	case arrow.DURATION:
 		return newDataField[int64](f)
+	case arrow.INTERVAL_MONTHS:
+		return newDataField[int32](f)
+	case arrow.INTERVAL_DAY_TIME:
+		return newDataField[int64](f)
+	case arrow.DECIMAL128, arrow.DECIMAL256:
+		return newDataField[string](f)
+	case arrow.BINARY, arrow.LARGE_BINARY, arrow.FIXED_SIZE_BINARY:
+		return newDataField[string](f)
 	default:
 		return newDataField[json.RawMessage](f)
 	}
@@ -191,6 +201,7 @@ func copyData(field *data.Field, col arrow.Array) error {
 			}
 			field.Append(v.Value(i).ToTime(arrow.Nanosecond))
 		}
+		return nil
 	case arrow.DENSE_UNION:
 		v := array.NewDenseUnionData(data)
 		for i := 0; i < v.Len(); i++ {
@@ -219,35 +230,215 @@ func copyData(field *data.Field, col arrow.Array) error {
 			}
 			field.Append(json.RawMessage(b))
 		}
+		return nil
 	case arrow.STRING:
 		copyBasic[string](field, array.NewStringData(data))
+		return nil
 	case arrow.UINT8:
 		copyBasic[uint8](field, array.NewUint8Data(data))
+		return nil
 	case arrow.UINT16:
 		copyBasic[uint16](field, array.NewUint16Data(data))
+		return nil
 	case arrow.UINT32:
 		copyBasic[uint32](field, array.NewUint32Data(data))
+		return nil
 	case arrow.UINT64:
 		copyBasic[uint64](field, array.NewUint64Data(data))
+		return nil
 	case arrow.INT8:
 		copyBasic[int8](field, array.NewInt8Data(data))
+		return nil
 	case arrow.INT16:
 		copyBasic[int16](field, array.NewInt16Data(data))
+		return nil
 	case arrow.INT32:
 		copyBasic[int32](field, array.NewInt32Data(data))
+		return nil
 	case arrow.INT64:
 		copyBasic[int64](field, array.NewInt64Data(data))
+		return nil
 	case arrow.FLOAT32:
 		copyBasic[float32](field, array.NewFloat32Data(data))
+		return nil
 	case arrow.FLOAT64:
 		copyBasic[float64](field, array.NewFloat64Data(data))
+		return nil
 	case arrow.BOOL:
 		copyBasic[bool](field, array.NewBooleanData(data))
+		return nil
 	case arrow.DURATION:
 		copyBasic[int64](field, array.NewInt64Data(data))
+		return nil
+	case arrow.INTERVAL_MONTHS:
+		// Oracle INTERVAL YEAR TO MONTH
+		v := array.NewMonthIntervalData(data)
+		for i := 0; i < v.Len(); i++ {
+			if field.Nullable() {
+				if v.IsNull(i) {
+					var n *int32
+					field.Append(n)
+					continue
+				}
+				months := int32(v.Value(i))
+				field.Append(&months)
+				continue
+			}
+			field.Append(int32(v.Value(i)))
+		}
+		return nil
+	case arrow.INTERVAL_DAY_TIME:
+		// Oracle INTERVAL DAY TO SECOND
+		v := array.NewDayTimeIntervalData(data)
+		for i := 0; i < v.Len(); i++ {
+			if field.Nullable() {
+				if v.IsNull(i) {
+					var n *int64
+					field.Append(n)
+					continue
+				}
+				// Convert DayTimeInterval to nanoseconds
+				interval := v.Value(i)
+				// DayTimeInterval has Days and Milliseconds
+				nanos := int64(interval.Days)*24*60*60*1000000000 + int64(interval.Milliseconds)*1000000
+				field.Append(&nanos)
+				continue
+			}
+			interval := v.Value(i)
+			nanos := int64(interval.Days)*24*60*60*1000000000 + int64(interval.Milliseconds)*1000000
+			field.Append(nanos)
+		}
+		return nil
+	case arrow.DATE32:
+		v := array.NewDate32Data(data)
+		for i := 0; i < v.Len(); i++ {
+			if field.Nullable() {
+				if v.IsNull(i) {
+					var t *time.Time
+					field.Append(t)
+					continue
+				}
+				t := v.Value(i).ToTime()
+				field.Append(&t)
+				continue
+			}
+			field.Append(v.Value(i).ToTime())
+		}
+		return nil
+	case arrow.DATE64:
+		v := array.NewDate64Data(data)
+		for i := 0; i < v.Len(); i++ {
+			if field.Nullable() {
+				if v.IsNull(i) {
+					var t *time.Time
+					field.Append(t)
+					continue
+				}
+				t := v.Value(i).ToTime()
+				field.Append(&t)
+				continue
+			}
+			field.Append(v.Value(i).ToTime())
+		}
+		return nil
+	case arrow.DECIMAL128:
+		// Handle Decimal128 (Oracle NUMBER with precision/scale)
+		v := array.NewDecimal128Data(data)
+		for i := 0; i < v.Len(); i++ {
+			if field.Nullable() {
+				if v.IsNull(i) {
+					var s *string
+					field.Append(s)
+					continue
+				}
+				// Convert decimal to string to preserve precision
+				strVal := v.Value(i).ToString(v.DataType().(*arrow.Decimal128Type).Scale)
+				field.Append(&strVal)
+				continue
+			}
+			strVal := v.Value(i).ToString(v.DataType().(*arrow.Decimal128Type).Scale)
+			field.Append(strVal)
+		}
+		return nil
+	case arrow.DECIMAL256:
+		// Handle Decimal256
+		v := array.NewDecimal256Data(data)
+		for i := 0; i < v.Len(); i++ {
+			if field.Nullable() {
+				if v.IsNull(i) {
+					var s *string
+					field.Append(s)
+					continue
+				}
+				strVal := v.Value(i).ToString(v.DataType().(*arrow.Decimal256Type).Scale)
+				field.Append(&strVal)
+				continue
+			}
+			strVal := v.Value(i).ToString(v.DataType().(*arrow.Decimal256Type).Scale)
+			field.Append(strVal)
+		}
+		return nil
+	case arrow.BINARY, arrow.LARGE_BINARY:
+		// Handle binary data as base64 encoded strings
+		v := array.NewBinaryData(data)
+		for i := 0; i < v.Len(); i++ {
+			if field.Nullable() {
+				if v.IsNull(i) {
+					var s *string
+					field.Append(s)
+					continue
+				}
+				strVal := string(v.Value(i))
+				field.Append(&strVal)
+				continue
+			}
+			field.Append(string(v.Value(i)))
+		}
+		return nil
+	case arrow.FIXED_SIZE_BINARY:
+		// Handle fixed size binary data
+		v := array.NewFixedSizeBinaryData(data)
+		for i := 0; i < v.Len(); i++ {
+			if field.Nullable() {
+				if v.IsNull(i) {
+					var s *string
+					field.Append(s)
+					continue
+				}
+				strVal := string(v.Value(i))
+				field.Append(&strVal)
+				continue
+			}
+			field.Append(string(v.Value(i)))
+		}
+		return nil
+	case arrow.NULL:
+		// Handle NULL type - append nulls for all rows
+		for i := 0; i < col.Len(); i++ {
+			if field.Nullable() {
+				var j *json.RawMessage
+				field.Append(j)
+			} else {
+				field.Append(json.RawMessage(nil))
+			}
+		}
+		return nil
+	default:
+		// For unsupported types, log warning and fill with nulls/empty values
+		logInfof("Unsupported Arrow type %s (ID: %d) for field %s, filling with empty values", col.DataType().Name(), col.DataType().ID(), field.Name)
+		// Fill field with appropriate null/empty values based on whether it's nullable
+		for i := 0; i < col.Len(); i++ {
+			if field.Nullable() {
+				// For nullable fields, append nil JSON value
+				var j *json.RawMessage
+				field.Append(j)
+			} else {
+				// For non-nullable fields, append empty JSON
+				field.Append(json.RawMessage(nil))
+			}
+		}
+		return nil
 	}
-
-	return nil
 }
 
 type arrowArray[T any] interface {
