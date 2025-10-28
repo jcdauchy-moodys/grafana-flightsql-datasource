@@ -74,10 +74,7 @@ type FlightSQLDatasource struct {
 	client           *client
 	resourceHandler  backend.CallResourceHandler
 	md               metadata.MD
-<<<<<<< Updated upstream
-=======
 	cfg              config // Store the original config for creating override clients
->>>>>>> Stashed changes
 	healthCheckQuery string
 }
 
@@ -146,10 +143,7 @@ func NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSetti
 	ds := &FlightSQLDatasource{
 		client:           client,
 		md:               md,
-<<<<<<< Updated upstream
-=======
 		cfg:              cfg,
->>>>>>> Stashed changes
 		healthCheckQuery: healthCheckQuery,
 	}
 	r := chi.NewRouter()

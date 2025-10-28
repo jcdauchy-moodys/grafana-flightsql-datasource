@@ -116,8 +116,6 @@ func (d *FlightSQLDatasource) query(ctx context.Context, query sqlutil.Query, ho
 		return backend.DataResponse{}
 	}
 
-<<<<<<< Updated upstream
-=======
 	// Determine which client to use
 	clientToUse := d.client
 	var tempClient *client
@@ -138,7 +136,6 @@ func (d *FlightSQLDatasource) query(ctx context.Context, query sqlutil.Query, ho
 		clientToUse = tempClient
 	}
 
->>>>>>> Stashed changes
 	if d.md.Len() != 0 {
 		ctx = metadata.NewOutgoingContext(ctx, d.md)
 	}
